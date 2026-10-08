@@ -1,0 +1,10 @@
+# secrets
+.env
+
+# recordings, static GTFS, lake, Spark state: never commit
+data/
+checkpoints/
+
+__pycache__/
+*.pyc
+.DS_Store
