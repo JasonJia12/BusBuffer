@@ -21,7 +21,8 @@ def get(msg, field):
 def trip_rows(feed):
     rows = []
     for entity in feed.entity:
-        if not entity.HasField("trip_update"):
+        # skip detoured trips, their stops don't match the schedule
+        if not entity.HasField("trip_update") or entity.trip_update.trip.HasField("modified_trip"):
             continue
         tu = entity.trip_update
         for stu in tu.stop_time_update:
@@ -29,7 +30,6 @@ def trip_rows(feed):
                 "feed_ts": feed.header.timestamp,
                 "trip_id": get(tu.trip, "trip_id"),
                 "route_id": get(tu.trip, "route_id"),
-                "vehicle_id": get(tu.vehicle, "id"),
                 "stop_sequence": get(stu, "stop_sequence"),
                 "stop_id": get(stu, "stop_id"),
                 "arrival": get(stu.arrival, "time"),
@@ -42,8 +42,6 @@ def trip_rows(feed):
 def vehicle_rows(feed):
     rows = []
     for entity in feed.entity:
-        if not entity.HasField("vehicle"):
-            continue
         v = entity.vehicle
         rows.append({
             "feed_ts": feed.header.timestamp,
