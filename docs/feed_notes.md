@@ -32,4 +32,8 @@ Some trips are detoured. The feed marks them with modified_trip, and some of the
 
 ## When did the bus really get to a stop?
 
-The vehicles feed doesn't say which stop a bus is at, so I can't read it from there directly. Two ways that could work: the time a stop disappears from the trip in the trips feed, or the time the bus GPS gets close to the stop. I'll try both on some data and compare them next.
+The vehicles feed doesn't say which stop a bus is at, so I tried two other ways and compared them on Oct 9, 7-10 am (analysis/arrival_times.py). The first uses the trips feed: once the bus passes a stop, the stop drops out of the trip, so I take the time halfway between the last poll that still listed it and the first one that didn't. The second uses GPS: the first time the bus reported a position within 30 m of the stop.
+
+The trips feed way gave a time for 11,660 stops, GPS only for 5,907, because buses report every 30 s and often aren't that close to the stop when they do. On the 4,946 stops that had both (not counting first stops, where buses wait before leaving), GPS minus feed time had a median of 1 s, half were between -22 s and +8 s, 71% were within 30 s and 85% within 60 s.
+
+So I'm using the trips feed way and keeping GPS as a check. Two limits: the last two stops of a trip never drop out because the whole trip leaves the feed first, so those have no time, and every time is only good to about 30 s.
