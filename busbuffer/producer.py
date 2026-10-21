@@ -75,7 +75,7 @@ if __name__ == "__main__":
     if TOPIC not in admin.list_topics():
         admin.create_topics([NewTopic(TOPIC, num_partitions=4, replication_factor=1)])
 
-    producer = KafkaProducer(bootstrap_servers=BOOTSTRAP)
+    producer = KafkaProducer(bootstrap_servers=BOOTSTRAP, compression_type="gzip")
     if sys.argv[1] == "live":
         live(producer)
     else:
