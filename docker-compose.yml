@@ -17,6 +17,14 @@ services:
     volumes:
       - kafka-data:/var/lib/kafka/data
 
+  cassandra:
+    image: cassandra:5.0.9
+    environment:
+      # by default it takes half of Docker's memory
+      MAX_HEAP_SIZE: 1G
+    volumes:
+      - cassandra-data:/var/lib/cassandra
+
   spark-master:
     build: spark
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
@@ -36,3 +44,4 @@ services:
 
 volumes:
   kafka-data:
+  cassandra-data:
