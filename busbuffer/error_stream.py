@@ -6,7 +6,7 @@ import pandas as pd
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, explode, from_json
 
-from busbuffer.prediction_errors import update_trip
+from busbuffer.prediction_errors import TIMEOUT, update_trip
 from busbuffer.static_gtfs import service_date, trip_starts
 
 STOP = "struct<stop_sequence: int, arrival: long>"
@@ -15,7 +15,6 @@ TRIP = "trip_id string, route_id string, service_date date"
 ERRORS = f"{TRIP}, stop_sequence int, minutes_ahead int, lead int, predicted long, actual double"
 STATE = "trip binary"
 WATERMARK = "10 minutes"
-TIMEOUT = 3600  # seconds
 
 
 def trip_errors(key, batches, state):
