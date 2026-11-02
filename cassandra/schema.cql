@@ -39,3 +39,15 @@ CREATE TABLE IF NOT EXISTS busbuffer.live_predictions_by_trip (
     feed_ts timestamp,
     PRIMARY KEY ((service_date, trip_id), stop_sequence)
 ) WITH default_time_to_live = 7200;
+
+-- planner: error quantiles for a route, direction, day type and hour ('all' or -1 for wider groups)
+CREATE TABLE IF NOT EXISTS busbuffer.error_quantiles (
+    route_id text,
+    direction_id int,
+    day_type text,
+    hour int,
+    minutes_ahead int,
+    quantiles list<double>,
+    n bigint,
+    PRIMARY KEY ((route_id, direction_id, day_type, hour), minutes_ahead)
+);

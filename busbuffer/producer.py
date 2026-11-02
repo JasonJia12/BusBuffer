@@ -47,6 +47,9 @@ def publish(producer, path, scheduled):
         feed = read_feed(path)
     except DecodeError:
         return  # Metro's server sometimes sends an error page
+    # since Oct 20 about half the responses are a minute old and don't mark detours
+    if not any(e.HasField("trip_modifications") for e in feed.entity):
+        return
     for msg in trip_messages(feed, scheduled):
         producer.send(TOPIC, key=msg["trip_id"].encode(), value=json.dumps(msg).encode())
 
