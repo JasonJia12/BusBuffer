@@ -19,6 +19,8 @@ services:
 
   cassandra:
     image: cassandra:5.0.9
+    ports:
+      - "9042:9042"
     environment:
       # by default it takes half of Docker's memory
       MAX_HEAP_SIZE: 1G
