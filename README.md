@@ -8,6 +8,29 @@ I take route 80 to class. When I go by the arrival time the app shows, I often e
 
 ## How it works
 
+```
+Metro GTFS-RT feeds
+  |
+  |  recorder, every 30 s
+  v
+data/raw, gzipped protobuf
+  |
+  |  producer, live or replay
+  v
+Kafka topic metro.trip_updates, key trip_id
+  |                                   |
+  |  error job, state per trip        |  live job, stateless
+  v                                   v
+Parquet lake                        Cassandra live_predictions_by_stop
+(and Cassandra prediction_errors)   and live_predictions_by_trip
+  |                                   |
+  |  quantile job, Spark SQL          |
+  v                                   |
+Cassandra error_quantiles             |
+  |                                   |
+  +------> planner and dashboard <----+
+```
+
 The recorder (`recorder/record.py`) polls Metro's GTFS-Realtime trips and vehicles feeds every 30 s, which is about how often the feed changes, and the alerts feed every 5 min. It saves every changed response as gzipped protobuf under `data/raw`. It only uses the standard library and doesn't depend on the rest of the stack, so it ran on my laptop from Oct 8 to Nov 4, 2026, and nothing gets lost when Kafka or Spark are down or I change the code. That's about 110 MB a day.
 
 The producer (`busbuffer/producer.py`) parses the recorded trips files, drops detoured trips, and sends one message per trip per poll to the Kafka topic `metro.trip_updates`, which has 4 partitions. The key is the trip_id, so all polls of a trip go to the same partition and stay in time order, which the error job needs. In live mode it follows new files as the recorder writes them. In replay mode it sends old files with their original timestamps, sped up by a factor, so the whole pipeline can be run again over everything recorded.
