@@ -1,3 +1,4 @@
+# AI generated
 # Two ways to tell when a bus was at a stop, compared on Oct 9, 7-10 am:
 #   feed: a stop drops out of its trip in the trips feed once the bus has passed it
 #   gps:  the bus reports a position within 30 m of the stop

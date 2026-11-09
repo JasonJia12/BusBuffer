@@ -1,6 +1,6 @@
 # BusBuffer
 
-A personal project for CS 544. It records Madison Metro's real-time arrival predictions, works out when each bus really got to each stop, measures how wrong the predictions were, and uses that in a planner that tells me the latest time I can leave and still make class. It uses Docker Compose, Kafka, Spark Structured Streaming, Spark SQL and Cassandra.
+A personal project for CS 544. It records Madison Metro's real-time arrival predictions, works out when each bus really got to each stop, measures how wrong the predictions were, and uses that in a planner that tells me the latest time I can leave and still make class. It uses Docker Compose, Kafka, Spark Structured Streaming, Spark SQL and Cassandra. How each part uses what I learned in CS 544 is in `docs/cs544.md`.
 
 ## Problem
 
@@ -49,7 +49,7 @@ Each Cassandra table (`cassandra/schema.cql`) is made for one query. `prediction
 
 ## Planner
 
-`busbuffer/planner.py` looks at each bus that gets to my stop and then my destination within the next 30 minutes (errors were only measured up to 30 minutes ahead). It takes the feed's predicted arrival at both stops and the quantiles for that route, direction, day type and hour. If that group has fewer than 50 errors it uses route + day type instead, then route, then all routes.
+`busbuffer/planner.py` looks at each bus that gets to my stop and then my destination within the next 30 minutes (errors were only measured up to 30 minutes ahead). It takes the feed's predicted arrival at both stops and the quantiles for that route, direction, day type and hour. If that group has fewer than 50 errors it uses route + day type instead, then route, then all routes. Route 80 is a loop, and each time around is its own trip that ends at Langdon at N Park, where the same bus starts the next one. So when my destination is on the bus's next time around (the next trip of its block in `trips.txt`, if it is the same route and direction and starts where this one ends), the planner takes the destination's prediction from that trip.
 
 To catch the bus with 90% confidence, I should be at the stop by the predicted arrival plus the 10% quantile, since only 10% of buses came earlier than that. 80% and 95% use the 20% and 5% quantiles. The leave-by time is that minus my walk to the stop. The chance of making class is how often the bus got to the destination by class start minus my walk from the stop, read from the destination's quantiles with straight lines between them (below the 5% quantile it says 5%, above the 95% one 95%). It recommends the latest bus I can still leave for whose chance of making class is at least the confidence.
 
@@ -147,3 +147,7 @@ Tests:
 ```
 python -m pytest tests
 ```
+
+## AI use
+
+`AI_transcript_full.md` is my chat history with an AI coding assistant (Claude Code) for files that used AI in this repo(include this file which is also AI edited). Those files are marked "AI generated" if it wrote them or "AI edited" if it changed them.

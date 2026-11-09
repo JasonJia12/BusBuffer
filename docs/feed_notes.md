@@ -37,3 +37,5 @@ The vehicles feed doesn't say which stop a bus is at, so I tried two other ways 
 The trips feed way gave a time for 11,660 stops, GPS only for 5,907, because buses report every 30 s and often aren't that close to the stop when they do. On the 4,946 stops that had both (not counting first stops, where buses wait before leaving), GPS minus feed time had a median of 1 s, half were between -22 s and +8 s, 71% were within 30 s and 85% within 60 s.
 
 So I'm using the trips feed way and keeping GPS as a check. Two limits: the last two stops of a trip never drop out because the whole trip leaves the feed first, so those have no time, and every time is only good to about 30 s.
+
+AI edited; see [AI_transcript_full.md](../AI_transcript_full.md) for details.

@@ -1,3 +1,4 @@
+# AI edited; see AI_transcript_full.md for details.
 # Planner: when to leave for a bus and the chance of getting to class on time, from the error quantiles.
 
 MIN_N = 50
@@ -5,7 +6,7 @@ MIN_N = 50
 PERCENTS = list(range(5, 100, 5))
 
 
-def stop_times(rows, origin, destination):
+def stop_times(rows, next_rows, origin, destination):
     # a stop the bus has passed keeps its old row until the TTL, so only the newest poll counts
     newest = max(r["feed_ts"] for r in rows)
     at_origin = None
@@ -15,6 +16,12 @@ def stop_times(rows, origin, destination):
         if at_origin is None and r["stop_id"] == origin:
             at_origin = r["arrival"]
         elif at_origin is not None and r["stop_id"] == destination:
+            return at_origin, r["arrival"]
+    if at_origin is None:
+        return None
+    # on a loop the bus goes on as its next trip, which is in the same polls
+    for r in next_rows:
+        if r["feed_ts"] == newest and r["stop_id"] == destination:
             return at_origin, r["arrival"]
     return None
 

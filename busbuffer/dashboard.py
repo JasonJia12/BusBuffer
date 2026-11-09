@@ -1,3 +1,4 @@
+# AI generated
 # Streamlit page: when to leave for the bus from the live predictions, and how far off the predictions were.
 
 import time
@@ -11,7 +12,7 @@ from cassandra.query import dict_factory
 
 from busbuffer.planner import pick_quantiles, plan_trip, quantile_keys, recommend, stop_times
 from busbuffer.prediction_errors import minutes_ahead
-from busbuffer.static_gtfs import TZ, read_table
+from busbuffer.static_gtfs import TZ, read_table, trip_starts
 
 BOUND = {"0": "northbound", "90": "eastbound", "180": "southbound", "270": "westbound"}
 
@@ -34,15 +35,52 @@ def stop_names():
 
 
 @st.cache_data
-def later_stops():
+def trip_stops():
     trips = {}
     for r in read_table("stop_times"):
         if r["trip_id"] not in trips:
             trips[r["trip_id"]] = []
         trips[r["trip_id"]].append(r["stop_id"])
+    return trips
+
+
+@st.cache_data
+def next_trips():
+    stops = trip_stops()
+    starts = trip_starts()
+    lines = {}
+    blocks = {}
+    for r in read_table("trips"):
+        lines[r["trip_id"]] = (r["route_id"], r["direction_id"])
+        key = (r["service_id"], r["block_id"])
+        if key not in blocks:
+            blocks[key] = []
+        blocks[key].append((starts[r["trip_id"]], r["trip_id"]))
+    following = {}
+    for block in blocks.values():
+        block.sort()
+        for i in range(len(block) - 1):
+            trip_id = block[i][1]
+            next_id = block[i + 1][1]
+            # route 80 is a loop: a trip ends at Langdon at N Park and the same bus starts the next one there
+            if lines[trip_id] == lines[next_id] and stops[trip_id][-1] == stops[next_id][0]:
+                following[trip_id] = next_id
+    return following
+
+
+@st.cache_data
+def later_stops():
+    trips = trip_stops()
+    following = next_trips()
+    # the 14k trips only have 194 different lists of stops, with the next trip on a loop
+    rides = set()
+    for trip_id in trips:
+        ride = list(trips[trip_id])
+        if trip_id in following:
+            ride.extend(trips[following[trip_id]])
+        rides.add(tuple(ride))
     later = {}
-    # the 14k trips only have 180 different lists of stops
-    for stops in set(tuple(s) for s in trips.values()):
+    for stops in rides:
         for i in range(len(stops) - 1):
             if stops[i] not in later:
                 later[stops[i]] = set()
@@ -69,6 +107,16 @@ def group_name(q):
     return f"route {q['route_id']}, direction {q['direction_id']}, {q['day_type']}, {q['hour']}:00"
 
 
+def read_trip(service_date, trip_id):
+    rows = session.execute("""
+        SELECT stop_id, toUnixTimestamp(arrival) / 1000 AS arrival,
+               toUnixTimestamp(feed_ts) / 1000 AS feed_ts
+        FROM live_predictions_by_trip WHERE service_date = %s AND trip_id = %s
+    """, [service_date, trip_id])
+    # stop_times loops over the rows twice, a ResultSet can only be looped over once
+    return list(rows)
+
+
 def read_quantiles(route_id, direction_id, service_date, hour):
     groups = []
     for key in quantile_keys(route_id, direction_id, service_date, hour):
@@ -92,13 +140,11 @@ def show_plans(origin, destination, deadline, walk_to, confidence):
     newest = 0
     for bus in buses:
         newest = max(newest, bus["feed_ts"])
-        rows = session.execute("""
-            SELECT stop_id, toUnixTimestamp(arrival) / 1000 AS arrival,
-                   toUnixTimestamp(feed_ts) / 1000 AS feed_ts
-            FROM live_predictions_by_trip WHERE service_date = %s AND trip_id = %s
-        """, [bus["service_date"], bus["trip_id"]])
-        # stop_times loops over the rows twice, a ResultSet can only be looped over once
-        times = stop_times(list(rows), origin, destination)
+        rows = read_trip(bus["service_date"], bus["trip_id"])
+        next_rows = []
+        if bus["trip_id"] in following:
+            next_rows = read_trip(bus["service_date"], following[bus["trip_id"]])
+        times = stop_times(rows, next_rows, origin, destination)
         if times is None:
             continue
         at_origin, at_destination = times
@@ -158,6 +204,7 @@ session = connect()
 names = stop_names()
 later = later_stops()
 directions = trip_directions()
+following = next_trips()
 
 with st.sidebar:
     origins = sorted(later, key=names.get)

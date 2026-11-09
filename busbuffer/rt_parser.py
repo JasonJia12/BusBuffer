@@ -1,3 +1,4 @@
+# AI generated
 # Turns a recorded .pb.gz file into rows: one per (trip, stop) for trips, one per bus for vehicles.
 
 import gzip

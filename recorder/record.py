@@ -1,3 +1,4 @@
+# AI generated
 # Saves Madison Metro's realtime feeds as raw gzipped protobuf under data/raw/<date>/<feed>/.
 
 import csv

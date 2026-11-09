@@ -1,3 +1,4 @@
+# AI edited; see AI_transcript_full.md for details.
 services:
   kafka:
     image: apache/kafka:3.9.2

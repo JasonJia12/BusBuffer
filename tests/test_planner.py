@@ -1,3 +1,4 @@
+# AI edited; see AI_transcript_full.md for details.
 from busbuffer.planner import percent_below, pick_quantiles, plan_trip, recommend, stop_times
 
 QUANTILES = list(range(-90, 100, 10))
@@ -32,10 +33,27 @@ def test_stop_times_skips_a_trip_that_passed_the_origin():
         {"stop_id": "X", "arrival": 1200, "feed_ts": 1030},
         {"stop_id": "D", "arrival": 1300, "feed_ts": 1030},
     ]
-    assert stop_times(rows, "O", "D") is None
+    assert stop_times(rows, [], "O", "D") is None
     rows[0]["feed_ts"] = 1030
-    assert stop_times(rows, "O", "D") == (1100, 1300)
-    assert stop_times(rows, "D", "O") is None
+    assert stop_times(rows, [], "O", "D") == (1100, 1300)
+    assert stop_times(rows, [], "D", "O") is None
+
+
+def test_stop_times_stays_on_the_bus_into_its_next_trip():
+    rows = [
+        {"stop_id": "O", "arrival": 1100, "feed_ts": 1000},
+        {"stop_id": "X", "arrival": 1200, "feed_ts": 1000},
+    ]
+    next_rows = [
+        {"stop_id": "D", "arrival": 1600, "feed_ts": 1000},
+        {"stop_id": "O", "arrival": 2500, "feed_ts": 1000},
+    ]
+    assert stop_times(rows, next_rows, "O", "D") == (1100, 1600)
+    next_rows[0]["feed_ts"] = 970
+    assert stop_times(rows, next_rows, "O", "D") is None
+    next_rows[0]["feed_ts"] = 1000
+    rows[0]["feed_ts"] = 970
+    assert stop_times(rows, next_rows, "O", "D") is None
 
 
 def test_recommend_the_latest_bus_likely_to_be_on_time():
